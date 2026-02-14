@@ -8,7 +8,7 @@
         body { margin: 0; background: #000; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; }
         canvas { display: block; }
         
-        /* Mensaje Principal Rojo */
+        /* Mensaje Principal (Fijo al frente) */
         #mensaje-central {
             position: absolute;
             top: 50%;
@@ -21,22 +21,11 @@
         }
 
         h1 {
-            font-size: 2rem;
+            font-size: 1.8rem;
             color: #ff0000;
             text-shadow: 0 0 15px #ff0000, 0 0 30px #ff0000;
             margin: 0;
             animation: latido 2.5s infinite ease-in-out;
-        }
-
-        /* Mensajitos Pequeños */
-        .mensajito {
-            position: absolute;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.75rem;
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
-            pointer-events: none;
-            z-index: 50;
-            white-space: nowrap;
         }
 
         @keyframes latido {
@@ -57,7 +46,11 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- LISTA DE MENSAJITOS ---
+        let scene, camera, renderer, starGroup;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let zoom = 5;
+
         const textos = [
             "Me encantas bebé", "Te adoro", "Eres mi vida", "Mi cielito", "I found you", "Mi reina",
             "Casemonos", "Coqueta", "Mi amor", "Mi tesoro", "Ivanita", "Mi bebé",
@@ -66,21 +59,6 @@
             "Tu cinturita", "Muak", "Besemonos", "Te amo", "Mi florcita", "Mi maestra", "Mi coqueta"
         ];
 
-        textos.forEach(t => {
-            const div = document.createElement('div');
-            div.className = 'mensajito';
-            div.innerText = t;
-            div.style.top = Math.random() * 90 + 5 + "%";
-            div.style.left = Math.random() * 90 + 5 + "%";
-            document.body.appendChild(div);
-        });
-
-        // --- MOTOR 3D ---
-        let scene, camera, renderer, particles, sun;
-        let isDragging = false;
-        let previousMousePosition = { x: 0, y: 0 };
-        let zoom = 3;
-
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -88,82 +66,92 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // 1. ESTRELLA CENTRAL (SOL)
-            const sunGeo = new THREE.SphereGeometry(0.4, 32, 32);
-            const sunMat = new THREE.MeshBasicMaterial({ 
-                color: 0xff4444,
-                transparent: true,
-                opacity: 0.9
-            });
-            sun = new THREE.Mesh(sunGeo, sunMat);
-            scene.add(sun);
+            starGroup = new THREE.Group();
+            scene.add(starGroup);
 
-            // Brillo de la estrella central
-            const spriteMat = new THREE.SpriteMaterial({
-                map: new THREE.CanvasTexture(generateSprite()),
-                blending: THREE.AdditiveBlending,
-                color: 0xff0000
-            });
-            const sprite = new THREE.Sprite(spriteMat);
-            sprite.scale.set(2, 2, 1);
-            sun.add(sprite);
-
-            // 2. GALAXIA DE ESTRELLAS
+            // 1. GALAXIA AZUL 3D
             const geometry = new THREE.BufferGeometry();
-            const count = 18000;
+            const count = 20000;
             const positions = new Float32Array(count * 3);
             for(let i=0; i < count * 3; i++) {
-                positions[i] = (Math.random() - 0.5) * 15;
+                positions[i] = (Math.random() - 0.5) * 20;
             }
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            const material = new THREE.PointsMaterial({ size: 0.012, color: 0xffffff, transparent: true });
-            particles = new THREE.Points(geometry, material);
-            scene.add(particles);
+            const material = new THREE.PointsMaterial({ 
+                size: 0.02, 
+                color: 0x00aaff, // Azul Galaxia
+                transparent: true, 
+                opacity: 0.8 
+            });
+            const stars = new THREE.Points(geometry, material);
+            starGroup.add(stars);
+
+            // 2. MENSAJES EN 3D (Textos flotantes)
+            textos.forEach(t => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 256;
+                canvas.height = 64;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.font = 'Bold 24px Arial';
+                ctx.fillText(t, 10, 40);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+                const sprite = new THREE.Sprite(spriteMaterial);
+                
+                // Posiciones aleatorias en el espacio 3D
+                sprite.position.set(
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 10
+                );
+                sprite.scale.set(1, 0.25, 1);
+                starGroup.add(sprite);
+            });
 
             camera.position.z = zoom;
 
-            // --- INTERACCIÓN (DEDO/ZOOM) ---
+            // --- INTERACCIÓN ---
             const start = (x, y) => { 
                 isDragging = true; 
                 previousMousePosition = { x, y };
-                document.getElementById('musica').play();
+                document.getElementById('musica').play().catch(() => {});
             };
 
             const move = (x, y) => {
                 if (isDragging) {
-                    particles.rotation.y += (x - previousMousePosition.x) * 0.005;
-                    particles.rotation.x += (y - previousMousePosition.y) * 0.005;
-                    sun.rotation.y += (x - previousMousePosition.x) * 0.005;
+                    starGroup.rotation.y += (x - previousMousePosition.x) * 0.005;
+                    starGroup.rotation.x += (y - previousMousePosition.y) * 0.005;
                     previousMousePosition = { x, y };
                 }
             };
 
-            // Zoom con rueda
+            // Zoom (Mouse y Pellizco)
             window.addEventListener('wheel', e => {
                 zoom += e.deltaY * 0.005;
-                zoom = Math.max(1, Math.min(10, zoom));
+                zoom = Math.max(1, Math.min(15, zoom));
                 camera.position.z = zoom;
             });
 
-            // Zoom con Pellizco (Mobile)
             let initialDist = 0;
+            window.addEventListener('touchstart', e => {
+                if (e.touches.length === 1) start(e.touches[0].clientX, e.touches[0].clientY);
+                else initialDist = 0;
+            });
+
             window.addEventListener('touchmove', e => {
                 if (e.touches.length === 2) {
                     let dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
                     if (initialDist > 0) {
                         zoom += (initialDist - dist) * 0.01;
-                        zoom = Math.max(1, Math.min(10, zoom));
+                        zoom = Math.max(1, Math.min(15, zoom));
                         camera.position.z = zoom;
                     }
                     initialDist = dist;
                 } else {
                     move(e.touches[0].clientX, e.touches[0].clientY);
                 }
-            });
-
-            window.addEventListener('touchstart', e => {
-                if (e.touches.length === 1) start(e.touches[0].clientX, e.touches[0].clientY);
-                else initialDist = 0;
             });
 
             window.addEventListener('mousedown', e => start(e.clientX, e.clientY));
@@ -174,35 +162,21 @@
             animate();
         }
 
-        function generateSprite() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64; canvas.height = 64;
-            const context = canvas.getContext('2d');
-            const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
-            gradient.addColorStop(0, 'rgba(255,255,255,1)');
-            gradient.addColorStop(0.2, 'rgba(255,0,0,0.8)');
-            gradient.addColorStop(0.5, 'rgba(100,0,0,0.2)');
-            gradient.addColorStop(1, 'rgba(0,0,0,0)');
-            context.fillStyle = gradient;
-            context.fillRect(0, 0, 64, 64);
-            return canvas;
-        }
-
         function animate() {
             requestAnimationFrame(animate);
             if(!isDragging) {
-                particles.rotation.y += 0.0005;
-                sun.rotation.y += 0.005;
+                starGroup.rotation.y += 0.0007;
             }
             renderer.render(scene, camera);
         }
-        init();
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        init();
     </script>
 </body>
 </html>
