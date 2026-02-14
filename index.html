@@ -26,21 +26,25 @@
         let scene, camera, renderer, starGroup, mainText;
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
-        let zoom = 7; // Ajustado para ver la esfera central desde el inicio
+        let zoom = 5;
 
+        // Lista de mensajes actualizada
         const mensajesPequeños = [
-            "Me encantas bebé", "Te adoro", "Eres mi vida", "Mi cielito", "I found you", "Mi reina",
-            "Casemonos", "Coqueta", "Mi amor", "Mi tesoro", "Ivanita", "Mi bebé", "La madre de mis hijos",
-            "Mi princesa", "Muerdeme", "Eres mi estrella", "Mi solecito", "Mi lindura", "Te amo x100",
-            "Feliz Valentín", "Te extraño", "Tu cinturita", "Muak", "Besemonos", "Te amo", "Mi florcita",
-            "Mi maestra", "Mi coqueta", "Eres mi familia ya", "Te extraño", "Mi Reyna", "Mi bebecita",
-            "La bebé", "Me alegras los días siempre", "No sé que haría sin tí", "Porfa nunca terminemos",
-            "Tengamos muchos animalitos", "Mi preciosa", "Beautyfull", "Gracias", "Muchas gracias",
-            "Gracias por llegar a mi vida", "Me cambiaste para bien", "obsessive", "Te amo",
-            "Tengamos 1 hijito bello", "Plis", "Mi princesitaaa", "Te amo Ivana", "Siempre te protegeré",
-            "Siempre confiaré en ti", "Siempre siempre", "Siempre pienso en tí", "Me haces muy feliz",
-            "Mi mujer", "Mi esposa", "Mi marida", "La que debo proteger", "Quieres mis córneas?",
-            "Mi color favorito", "Mi música favorita", "Mi olor favorito", "Mi persona favorita", "Mi corazón"
+            "Te amo demasiado", "Azul", "Brunito", "18/09/26", "Primera cita en el cine",
+            "Coqueta", "Museo", "Besitos", "Barramos el techo", "Has lasaña", "My Valentine",
+            "Mi esposita", "Mi gatita", "Mi mordelona", "Muerdeme más plis", "Te amo demasiado mi amor",
+            "Tengamos otra cita", "Cita", "Cita cita", "Quieres pelear?", "Te amo", "Casemonos",
+            "Casemonos", "Casemonos", "Casemonos", "Me encantas bebé", "Te adoro", "Eres mi vida", 
+            "Mi cielito", "I found you", "Mi reina", "Mi amor", "Mi tesoro", "Ivanita", "Mi bebé", 
+            "La madre de mis hijos", "Mi princesa", "Muerdeme", "Eres mi estrella", "Mi solecito", 
+            "Mi lindura", "Te amo x100", "Feliz Valentín", "Te extraño", "Tu cinturita", "Muak", 
+            "Besemonos", "Mi florcita", "Mi maestra", "Eres mi familia ya", "Mi bebecita",
+            "Me alegras los días siempre", "No sé que haría sin tí", "Porfa nunca terminemos",
+            "Tengamos muchos animalitos", "Mi preciosa", "Beautyfull", "Gracias por llegar a mi vida", 
+            "Me cambiaste para bien", "obsessive", "Tengamos 1 hijito bello", "Te amo Ivana", 
+            "Siempre te protegeré", "Siempre confiaré en ti", "Siempre siempre", "Siempre pienso en tí", 
+            "Me haces muy feliz", "Mi mujer", "Mi esposa", "La que debo proteger", "Quieres mis córneas?",
+            "Mi color favorito", "Mi música favorita", "Mi persona favorita", "Mi corazón"
         ];
 
         function createTextSprite(text, color, fontSize, isMain = false) {
@@ -54,7 +58,7 @@
             ctx.textBaseline = 'middle';
             
             if(isMain) {
-                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowColor = 'rgba(0,0,0,1)';
                 ctx.shadowBlur = 10;
                 ctx.shadowOffsetX = 5;
                 ctx.shadowOffsetY = 5;
@@ -72,43 +76,28 @@
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
             document.body.appendChild(renderer.domElement);
 
             starGroup = new THREE.Group();
             scene.add(starGroup);
 
-            // 1. GALAXIA CON NÚCLEO ESFÉRICO (Efecto solicitado)
+            // 1. GALAXIA ROSA SUAVE (Cherry Blossom)
             const starGeo = new THREE.BufferGeometry();
             const starCount = 15000;
             const posArray = new Float32Array(starCount * 3);
-
-            for(let i=0; i < starCount; i++) {
-                // Math.pow(..., 3) concentra las estrellas en el centro (esfera)
-                // y las dispersa gradualmente hacia los lados
-                const dist = Math.pow(Math.random(), 3) * 35; 
-                const theta = Math.random() * Math.PI * 2;
-                const phi = Math.acos(2 * Math.random() - 1);
-
-                posArray[i*3] = dist * Math.sin(phi) * Math.cos(theta);
-                posArray[i*3+1] = dist * Math.sin(phi) * Math.sin(theta);
-                posArray[i*3+2] = dist * Math.cos(phi);
+            for(let i=0; i < starCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 40;
             }
-
             starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const starMat = new THREE.PointsMaterial({ 
-                size: 0.03, 
-                color: 0x00d9ff, 
-                transparent: true, 
-                opacity: 0.8 
-            });
+            // Color cambiado a Rosa Suave (0xff69b4)
+            const starMat = new THREE.PointsMaterial({ size: 0.025, color: 0xff69b4, transparent: true, opacity: 0.8 });
             const stars = new THREE.Points(starGeo, starMat);
             starGroup.add(stars);
 
-            // 2. MENSAJE PRINCIPAL ROJO
+            // 2. MENSAJE PRINCIPAL ROJO (CAPA 3D)
             mainText = createTextSprite("Te amo mucho Ivana ❤️", "#ff0000", 90, true);
             mainText.scale.set(6, 1.5, 1);
-            mainText.position.set(0, 0, 1.5); 
+            mainText.position.set(0, 0, 0.5);
             scene.add(mainText);
 
             // 3. MENSAJITOS PEQUEÑOS EN EL ESPACIO
@@ -121,7 +110,6 @@
 
             camera.position.z = zoom;
 
-            // --- INTERACCIÓN ---
             const startAction = (x, y) => {
                 isDragging = true;
                 previousMousePosition = { x, y };
@@ -143,25 +131,31 @@
             window.addEventListener('mousemove', e => moveAction(e.clientX, e.clientY));
             window.addEventListener('mouseup', () => {
                 isDragging = false;
-                mainText.position.set(0,0,1.5);
+                mainText.position.set(0,0,0.5);
             });
             
+            let initialDist = 0;
             window.addEventListener('touchstart', e => {
                 if(e.touches.length === 1) startAction(e.touches[0].clientX, e.touches[0].clientY);
             });
             window.addEventListener('touchmove', e => {
                 if(e.touches.length === 2) {
                     let dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-                    zoom = Math.max(2, Math.min(35, zoom + (dist < 100 ? 0.1 : -0.1)));
-                    camera.position.z = zoom;
+                    if(initialDist > 0) {
+                        zoom += (initialDist - dist) * 0.02;
+                        zoom = Math.max(1, Math.min(30, zoom));
+                        camera.position.z = zoom;
+                    }
+                    initialDist = dist;
                 } else {
                     moveAction(e.touches[0].clientX, e.touches[0].clientY);
                 }
             });
-            window.addEventListener('touchend', () => { isDragging = false; mainText.position.set(0,0,1.5); });
+            window.addEventListener('touchend', () => { isDragging = false; initialDist = 0; mainText.position.set(0,0,0.5); });
 
             window.addEventListener('wheel', e => {
-                zoom = Math.max(2, Math.min(35, zoom + e.deltaY * 0.01));
+                zoom += e.deltaY * 0.01;
+                zoom = Math.max(1, Math.min(30, zoom));
                 camera.position.z = zoom;
             });
 
