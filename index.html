@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Para mi Ivana Eterna ❤️</title>
+    <title>Para mi Ivana ❤️</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; }
         canvas { display: block; }
@@ -15,7 +15,7 @@
 </head>
 <body>
 
-    <div id="instruccion">Usa un dedo para girar y dos para zoom. Toca para música 🎵</div>
+    <div id="instruccion">Gira con un dedo, zoom con dos. Toca para música 🎵</div>
 
     <audio id="musica" loop>
         <source src="cancion.mp3" type="audio/mpeg">
@@ -23,10 +23,10 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        let scene, camera, renderer, starGroup, mainTextGroup;
+        let scene, camera, renderer, starGroup;
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
-        let zoom = 6;
+        let zoom = 5;
 
         const mensajesPequeños = [
             "Me encantas bebé", "Te adoro", "Eres mi vida", "Mi cielito", "I found you", "Mi reina",
@@ -43,15 +43,28 @@
             "Mi color favorito", "Mi música favorita", "Mi olor favorito", "Mi persona favorita", "Mi corazón"
         ];
 
-        function createTextSprite(text, color, fontSize = 24) {
+        // Función mejorada para que el texto no se corte
+        function createTextSprite(text, color, fontSize, isMain = false) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = 512;
-            canvas.height = 128;
+            
+            // Lienzo más grande para el texto principal
+            canvas.width = isMain ? 1024 : 512;
+            canvas.height = 256;
+            
             ctx.fillStyle = color;
             ctx.font = `Bold ${fontSize}px Arial`;
             ctx.textAlign = 'center';
-            ctx.fillText(text, 256, 64);
+            ctx.textBaseline = 'middle';
+            
+            // Añadir un pequeño brillo al texto rojo
+            if(isMain) {
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 20;
+            }
+            
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+            
             const texture = new THREE.CanvasTexture(canvas);
             const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
             const sprite = new THREE.Sprite(material);
@@ -68,30 +81,29 @@
             starGroup = new THREE.Group();
             scene.add(starGroup);
 
-            // 1. GALAXIA AZUL 3D
+            // 1. GALAXIA AZUL
             const starGeo = new THREE.BufferGeometry();
             const starCount = 15000;
             const posArray = new Float32Array(starCount * 3);
             for(let i=0; i < starCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 25;
+                posArray[i] = (Math.random() - 0.5) * 30;
             }
             starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const starMat = new THREE.PointsMaterial({ size: 0.02, color: 0x00d9ff, transparent: true, opacity: 0.7 });
+            const starMat = new THREE.PointsMaterial({ size: 0.02, color: 0x00d9ff, transparent: true, opacity: 0.8 });
             const stars = new THREE.Points(starGeo, starMat);
             starGroup.add(stars);
 
-            // 2. MENSAJE PRINCIPAL 3D (ROJO)
-            // Lo ponemos en el centro, pero como objeto 3D que gira
-            const mainText = createTextSprite("Te amo mucho Ivana, eres el amor de mi vida ❤️", "#ff0000", 32);
-            mainText.scale.set(6, 1.5, 1);
+            // 2. MENSAJE PRINCIPAL (ROJO Y GRANDE)
+            const mainText = createTextSprite("Te amo mucho Ivana ❤️", "#ff0000", 80, true);
+            mainText.scale.set(5, 1.25, 1);
             mainText.position.set(0, 0, 0);
-            scene.add(mainText); // Este se queda fijo o puedes meterlo a starGroup para que gire
+            scene.add(mainText); // Lo dejamos fuera del grupo para que siempre esté centrado
 
-            // 3. LLUVIA DE MENSAJITOS 3D
+            // 3. MENSAJITOS PEQUEÑOS EN 3D
             mensajesPequeños.forEach(t => {
-                const s = createTextSprite(t, "rgba(255, 255, 255, 0.8)", 20);
-                s.position.set((Math.random()-0.5)*15, (Math.random()-0.5)*15, (Math.random()-0.5)*15);
-                s.scale.set(2, 0.5, 1);
+                const s = createTextSprite(t, "rgba(255, 255, 255, 0.9)", 35);
+                s.position.set((Math.random()-0.5)*20, (Math.random()-0.5)*20, (Math.random()-0.5)*20);
+                s.scale.set(1.5, 0.4, 1);
                 starGroup.add(s);
             });
 
@@ -113,7 +125,6 @@
                 }
             };
 
-            // Eventos Mouse y Touch
             window.addEventListener('mousedown', e => startAction(e.clientX, e.clientY));
             window.addEventListener('mousemove', e => moveAction(e.clientX, e.clientY));
             window.addEventListener('mouseup', () => isDragging = false);
@@ -126,8 +137,8 @@
                 if(e.touches.length === 2) {
                     let dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
                     if(initialDist > 0) {
-                        zoom += (initialDist - dist) * 0.01;
-                        zoom = Math.max(1, Math.min(20, zoom));
+                        zoom += (initialDist - dist) * 0.015;
+                        zoom = Math.max(1, Math.min(25, zoom));
                         camera.position.z = zoom;
                     }
                     initialDist = dist;
@@ -137,10 +148,9 @@
             });
             window.addEventListener('touchend', () => { isDragging = false; initialDist = 0; });
 
-            // Zoom Mouse
             window.addEventListener('wheel', e => {
                 zoom += e.deltaY * 0.005;
-                zoom = Math.max(1, Math.min(20, zoom));
+                zoom = Math.max(1, Math.min(25, zoom));
                 camera.position.z = zoom;
             });
 
@@ -150,7 +160,7 @@
         function animate() {
             requestAnimationFrame(animate);
             if(!isDragging) {
-                starGroup.rotation.y += 0.0008;
+                starGroup.rotation.y += 0.001;
             }
             renderer.render(scene, camera);
         }
