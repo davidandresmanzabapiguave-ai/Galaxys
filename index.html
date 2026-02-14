@@ -26,7 +26,7 @@
         let scene, camera, renderer, starGroup, mainText;
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
-        let zoom = 8;
+        let zoom = 8; // Zoom un poco más alejado para apreciar la esfera central
 
         const mensajesPequeños = [
             "Me encantas bebé", "Te adoro", "Eres mi vida", "Mi cielito", "I found you", "Mi reina",
@@ -52,6 +52,12 @@
             ctx.font = `Bold ${fontSize}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            
+            if(isMain) {
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 20;
+            }
+            
             ctx.fillText(text, canvas.width / 2, canvas.height / 2);
             const texture = new THREE.CanvasTexture(canvas);
             const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
@@ -70,19 +76,14 @@
             starGroup = new THREE.Group();
             scene.add(starGroup);
 
-            // GALAXIA CON ESFERA CENTRAL
+            // --- EFECTO DE ESFERA CENTRAL Y DISPERSIÓN ---
             const starGeo = new THREE.BufferGeometry();
-            const starCount = 12000; // Reducido para mayor compatibilidad
+            const starCount = 15000;
             const posArray = new Float32Array(starCount * 3);
 
             for(let i=0; i < starCount; i++) {
-                // 1 de cada 3 estrellas irá directo al centro denso (la esfera)
-                let dist;
-                if (i % 3 === 0) {
-                    dist = Math.random() * 2; // Esfera central pequeña y densa
-                } else {
-                    dist = 2 + Math.random() * 20; // Dispersión hacia afuera
-                }
+                // El truco está en usar Math.pow para concentrar los valores cerca del 0
+                const dist = Math.pow(Math.random(), 3) * 35; 
                 
                 const theta = Math.random() * Math.PI * 2;
                 const phi = Math.acos(2 * Math.random() - 1);
@@ -93,19 +94,25 @@
             }
 
             starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const starMat = new THREE.PointsMaterial({ size: 0.04, color: 0x00d9ff, transparent: true, opacity: 0.8 });
+            const starMat = new THREE.PointsMaterial({ 
+                size: 0.035, 
+                color: 0x00d9ff, 
+                transparent: true, 
+                opacity: 0.9 
+            });
             const stars = new THREE.Points(starGeo, starMat);
             starGroup.add(stars);
 
-            // MENSAJE PRINCIPAL ROJO
+            // 2. MENSAJE PRINCIPAL ROJO
             mainText = createTextSprite("Te amo mucho Ivana ❤️", "#ff0000", 90, true);
-            mainText.scale.set(7, 1.75, 1);
-            mainText.position.set(0, 0, 2); 
+            mainText.scale.set(6, 1.5, 1);
+            mainText.position.set(0, 0, 1.5); // Ligeramente frente al núcleo
             scene.add(mainText);
 
-            // MENSAJITOS PEQUEÑOS
+            // 3. MENSAJITOS PEQUEÑOS EN EL ESPACIO
             mensajesPequeños.forEach(t => {
-                const s = createTextSprite(t, "white", 35);
+                const s = createTextSprite(t, "rgba(255, 255, 255, 0.85)", 35);
+                // Estos se dispersan de forma más uniforme para que se puedan leer al navegar
                 s.position.set((Math.random()-0.5)*30, (Math.random()-0.5)*30, (Math.random()-0.5)*30);
                 s.scale.set(1.8, 0.45, 1);
                 starGroup.add(s);
@@ -113,6 +120,7 @@
 
             camera.position.z = zoom;
 
+            // --- INTERACCIÓN ---
             const startAction = (x, y) => {
                 isDragging = true;
                 previousMousePosition = { x, y };
@@ -131,22 +139,34 @@
             window.addEventListener('mousedown', e => startAction(e.clientX, e.clientY));
             window.addEventListener('mousemove', e => moveAction(e.clientX, e.clientY));
             window.addEventListener('mouseup', () => isDragging = false);
-            window.addEventListener('touchstart', e => { if(e.touches.length === 1) startAction(e.touches[0].clientX, e.touches[0].clientY); });
+            
+            window.addEventListener('touchstart', e => {
+                if(e.touches.length === 1) startAction(e.touches[0].clientX, e.touches[0].clientY);
+            });
             window.addEventListener('touchmove', e => {
                 if(e.touches.length === 2) {
                     let dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-                    zoom = Math.max(2, Math.min(40, zoom + (dist < 100 ? 0.1 : -0.1)));
+                    zoom = Math.max(2, Math.min(45, zoom + (dist < 100 ? 0.1 : -0.1)));
                     camera.position.z = zoom;
-                } else { moveAction(e.touches[0].clientX, e.touches[0].clientY); }
+                } else {
+                    moveAction(e.touches[0].clientX, e.touches[0].clientY);
+                }
             });
             window.addEventListener('touchend', () => { isDragging = false; });
+
+            window.addEventListener('wheel', e => {
+                zoom = Math.max(2, Math.min(45, zoom + e.deltaY * 0.01));
+                camera.position.z = zoom;
+            });
 
             animate();
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            if(!isDragging) starGroup.rotation.y += 0.001;
+            if(!isDragging) {
+                starGroup.rotation.y += 0.001;
+            }
             renderer.render(scene, camera);
         }
 
