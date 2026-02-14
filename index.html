@@ -28,7 +28,6 @@
         let previousMousePosition = { x: 0, y: 0 };
         let zoom = 5;
 
-        // Lista de mensajes actualizada
         const mensajesPequeños = [
             "Te amo demasiado", "Azul", "Brunito", "18/09/26", "Primera cita en el cine",
             "Coqueta", "Museo", "Besitos", "Barramos el techo", "Has lasaña", "My Valentine",
@@ -81,7 +80,6 @@
             starGroup = new THREE.Group();
             scene.add(starGroup);
 
-            // 1. GALAXIA ROSA SUAVE (Cherry Blossom)
             const starGeo = new THREE.BufferGeometry();
             const starCount = 15000;
             const posArray = new Float32Array(starCount * 3);
@@ -89,18 +87,15 @@
                 posArray[i] = (Math.random() - 0.5) * 40;
             }
             starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            // Color cambiado a Rosa Suave (0xff69b4)
             const starMat = new THREE.PointsMaterial({ size: 0.025, color: 0xff69b4, transparent: true, opacity: 0.8 });
             const stars = new THREE.Points(starGeo, starMat);
             starGroup.add(stars);
 
-            // 2. MENSAJE PRINCIPAL ROJO (CAPA 3D)
             mainText = createTextSprite("Te amo mucho Ivana ❤️", "#ff0000", 90, true);
             mainText.scale.set(6, 1.5, 1);
             mainText.position.set(0, 0, 0.5);
             scene.add(mainText);
 
-            // 3. MENSAJITOS PEQUEÑOS EN EL ESPACIO
             mensajesPequeños.forEach(t => {
                 const s = createTextSprite(t, "rgba(255, 255, 255, 0.9)", 35);
                 s.position.set((Math.random()-0.5)*30, (Math.random()-0.5)*30, (Math.random()-0.5)*30);
@@ -143,7 +138,8 @@
                     let dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
                     if(initialDist > 0) {
                         zoom += (initialDist - dist) * 0.02;
-                        zoom = Math.max(1, Math.min(30, zoom));
+                        // AQUÍ SE CAMBIÓ EL LÍMITE A 20
+                        zoom = Math.max(1, Math.min(20, zoom));
                         camera.position.z = zoom;
                     }
                     initialDist = dist;
@@ -155,7 +151,8 @@
 
             window.addEventListener('wheel', e => {
                 zoom += e.deltaY * 0.01;
-                zoom = Math.max(1, Math.min(30, zoom));
+                // AQUÍ TAMBIÉN SE CAMBIÓ EL LÍMITE A 20
+                zoom = Math.max(1, Math.min(20, zoom));
                 camera.position.z = zoom;
             });
 
