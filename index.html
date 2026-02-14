@@ -23,7 +23,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        let scene, camera, renderer, starGroup;
+        let scene, camera, renderer, starGroup, mainText;
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
         let zoom = 5;
@@ -43,28 +43,25 @@
             "Mi color favorito", "Mi música favorita", "Mi olor favorito", "Mi persona favorita", "Mi corazón"
         ];
 
-        // Función mejorada para que el texto no se corte
         function createTextSprite(text, color, fontSize, isMain = false) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
-            // Lienzo más grande para el texto principal
             canvas.width = isMain ? 1024 : 512;
             canvas.height = 256;
-            
             ctx.fillStyle = color;
             ctx.font = `Bold ${fontSize}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            // Añadir un pequeño brillo al texto rojo
             if(isMain) {
-                ctx.shadowColor = color;
-                ctx.shadowBlur = 20;
+                // Efecto de relieve/sombra para simular 3D
+                ctx.shadowColor = 'rgba(0,0,0,1)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetX = 5;
+                ctx.shadowOffsetY = 5;
             }
             
             ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-            
             const texture = new THREE.CanvasTexture(canvas);
             const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
             const sprite = new THREE.Sprite(material);
@@ -86,24 +83,24 @@
             const starCount = 15000;
             const posArray = new Float32Array(starCount * 3);
             for(let i=0; i < starCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 30;
+                posArray[i] = (Math.random() - 0.5) * 40;
             }
             starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const starMat = new THREE.PointsMaterial({ size: 0.02, color: 0x00d9ff, transparent: true, opacity: 0.8 });
+            const starMat = new THREE.PointsMaterial({ size: 0.025, color: 0x00d9ff, transparent: true, opacity: 0.8 });
             const stars = new THREE.Points(starGeo, starMat);
             starGroup.add(stars);
 
-            // 2. MENSAJE PRINCIPAL (ROJO Y GRANDE)
-            const mainText = createTextSprite("Te amo mucho Ivana ❤️", "#ff0000", 80, true);
-            mainText.scale.set(5, 1.25, 1);
-            mainText.position.set(0, 0, 0);
-            scene.add(mainText); // Lo dejamos fuera del grupo para que siempre esté centrado
+            // 2. MENSAJE PRINCIPAL ROJO (CAPA 3D)
+            mainText = createTextSprite("Te amo mucho Ivana ❤️", "#ff0000", 90, true);
+            mainText.scale.set(6, 1.5, 1);
+            mainText.position.set(0, 0, 0.5); // Un poco adelantado
+            scene.add(mainText);
 
-            // 3. MENSAJITOS PEQUEÑOS EN 3D
+            // 3. MENSAJITOS PEQUEÑOS EN EL ESPACIO
             mensajesPequeños.forEach(t => {
                 const s = createTextSprite(t, "rgba(255, 255, 255, 0.9)", 35);
-                s.position.set((Math.random()-0.5)*20, (Math.random()-0.5)*20, (Math.random()-0.5)*20);
-                s.scale.set(1.5, 0.4, 1);
+                s.position.set((Math.random()-0.5)*30, (Math.random()-0.5)*30, (Math.random()-0.5)*30);
+                s.scale.set(1.8, 0.45, 1);
                 starGroup.add(s);
             });
 
@@ -121,13 +118,19 @@
                 if (isDragging) {
                     starGroup.rotation.y += (x - previousMousePosition.x) * 0.005;
                     starGroup.rotation.x += (y - previousMousePosition.y) * 0.005;
+                    // El texto central también se inclina un poco para efecto 3D
+                    mainText.position.x += (x - previousMousePosition.x) * 0.002;
+                    mainText.position.y -= (y - previousMousePosition.y) * 0.002;
                     previousMousePosition = { x, y };
                 }
             };
 
             window.addEventListener('mousedown', e => startAction(e.clientX, e.clientY));
             window.addEventListener('mousemove', e => moveAction(e.clientX, e.clientY));
-            window.addEventListener('mouseup', () => isDragging = false);
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+                mainText.position.set(0,0,0.5); // Regresa al centro
+            });
             
             let initialDist = 0;
             window.addEventListener('touchstart', e => {
@@ -137,8 +140,8 @@
                 if(e.touches.length === 2) {
                     let dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
                     if(initialDist > 0) {
-                        zoom += (initialDist - dist) * 0.015;
-                        zoom = Math.max(1, Math.min(25, zoom));
+                        zoom += (initialDist - dist) * 0.02;
+                        zoom = Math.max(1, Math.min(30, zoom));
                         camera.position.z = zoom;
                     }
                     initialDist = dist;
@@ -146,11 +149,11 @@
                     moveAction(e.touches[0].clientX, e.touches[0].clientY);
                 }
             });
-            window.addEventListener('touchend', () => { isDragging = false; initialDist = 0; });
+            window.addEventListener('touchend', () => { isDragging = false; initialDist = 0; mainText.position.set(0,0,0.5); });
 
             window.addEventListener('wheel', e => {
-                zoom += e.deltaY * 0.005;
-                zoom = Math.max(1, Math.min(25, zoom));
+                zoom += e.deltaY * 0.01;
+                zoom = Math.max(1, Math.min(30, zoom));
                 camera.position.z = zoom;
             });
 
@@ -161,6 +164,8 @@
             requestAnimationFrame(animate);
             if(!isDragging) {
                 starGroup.rotation.y += 0.001;
+                // Efecto de flotación suave para el texto central
+                mainText.position.y = Math.sin(Date.now() * 0.002) * 0.1;
             }
             renderer.render(scene, camera);
         }
