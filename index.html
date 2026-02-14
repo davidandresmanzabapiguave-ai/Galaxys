@@ -21,39 +21,27 @@
         }
 
         h1 {
-            font-size: 2.2rem;
+            font-size: 2rem;
             color: #ff0000;
             text-shadow: 0 0 15px #ff0000, 0 0 30px #ff0000;
             margin: 0;
             animation: latido 2.5s infinite ease-in-out;
         }
 
-        /* Mensajitos Pequeños Flotantes */
+        /* Mensajitos Pequeños */
         .mensajito {
             position: absolute;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.85rem;
-            text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.75rem;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
             pointer-events: none;
             z-index: 50;
-            font-style: italic;
-        }
-
-        .instruccion {
-            position: absolute;
-            bottom: 20px;
-            width: 100%;
-            text-align: center;
-            color: white;
-            font-size: 0.7rem;
-            opacity: 0.5;
-            letter-spacing: 1px;
-            z-index: 110;
+            white-space: nowrap;
         }
 
         @keyframes latido {
-            0%, 100% { transform: scale(1); opacity: 0.9; }
-            50% { transform: scale(1.08); opacity: 1; }
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
     </style>
 </head>
@@ -63,29 +51,35 @@
         <h1>Te amo mucho Ivana, eres el amor de mi vida ❤️</h1>
     </div>
 
-    <div class="instruccion">Gira la galaxia con tu dedo y toca para la música 🎵</div>
-
     <audio id="musica" loop>
         <source src="cancion.mp3" type="audio/mpeg">
     </audio>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- CREAR MENSAJITOS PEQUEÑOS ---
-        const textos = ["Me encantas bebé", "Te adoro", "Eres mi vida", "Mi cielito", "I found you", "Mi reina"];
+        // --- LISTA DE MENSAJITOS ---
+        const textos = [
+            "Me encantas bebé", "Te adoro", "Eres mi vida", "Mi cielito", "I found you", "Mi reina",
+            "Casemonos", "Coqueta", "Mi amor", "Mi tesoro", "Ivanita", "Mi bebé",
+            "La madre de mis hijos", "Mi princesa", "Muerdeme", "Eres mi estrella",
+            "Mi solecito", "Mi lindura", "Te amo x100", "Feliz Valentín", "Te extraño",
+            "Tu cinturita", "Muak", "Besemonos", "Te amo", "Mi florcita", "Mi maestra", "Mi coqueta"
+        ];
+
         textos.forEach(t => {
-            const span = document.createElement('div');
-            span.className = 'mensajito';
-            span.innerText = t;
-            span.style.top = Math.random() * 85 + 5 + "%";
-            span.style.left = Math.random() * 80 + 5 + "%";
-            document.body.appendChild(span);
+            const div = document.createElement('div');
+            div.className = 'mensajito';
+            div.innerText = t;
+            div.style.top = Math.random() * 90 + 5 + "%";
+            div.style.left = Math.random() * 90 + 5 + "%";
+            document.body.appendChild(div);
         });
 
-        // --- MOTOR DE LA GALAXIA 3D ---
-        let scene, camera, renderer, particles;
+        // --- MOTOR 3D ---
+        let scene, camera, renderer, particles, sun;
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
+        let zoom = 3;
 
         function init() {
             scene = new THREE.Scene();
@@ -94,75 +88,121 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Crear Estrellas
+            // 1. ESTRELLA CENTRAL (SOL)
+            const sunGeo = new THREE.SphereGeometry(0.4, 32, 32);
+            const sunMat = new THREE.MeshBasicMaterial({ 
+                color: 0xff4444,
+                transparent: true,
+                opacity: 0.9
+            });
+            sun = new THREE.Mesh(sunGeo, sunMat);
+            scene.add(sun);
+
+            // Brillo de la estrella central
+            const spriteMat = new THREE.SpriteMaterial({
+                map: new THREE.CanvasTexture(generateSprite()),
+                blending: THREE.AdditiveBlending,
+                color: 0xff0000
+            });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(2, 2, 1);
+            sun.add(sprite);
+
+            // 2. GALAXIA DE ESTRELLAS
             const geometry = new THREE.BufferGeometry();
-            const count = 15000;
+            const count = 18000;
             const positions = new Float32Array(count * 3);
             for(let i=0; i < count * 3; i++) {
-                positions[i] = (Math.random() - 0.5) * 12;
+                positions[i] = (Math.random() - 0.5) * 15;
             }
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            
-            const material = new THREE.PointsMaterial({
-                size: 0.015,
-                color: 0xffffff,
-                transparent: true,
-                opacity: 0.8
-            });
-
+            const material = new THREE.PointsMaterial({ size: 0.012, color: 0xffffff, transparent: true });
             particles = new THREE.Points(geometry, material);
             scene.add(particles);
-            camera.position.z = 3;
 
-            // --- EVENTOS INTERACTIVOS (DEDO/MOUSE) ---
-            const startAction = (x, y) => {
-                isDragging = true;
+            camera.position.z = zoom;
+
+            // --- INTERACCIÓN (DEDO/ZOOM) ---
+            const start = (x, y) => { 
+                isDragging = true; 
                 previousMousePosition = { x, y };
-                // Activar música
-                const audio = document.getElementById('musica');
-                audio.play();
-                document.querySelector('.instruccion').style.display = 'none';
+                document.getElementById('musica').play();
             };
 
-            const moveAction = (x, y) => {
+            const move = (x, y) => {
                 if (isDragging) {
-                    const deltaX = x - previousMousePosition.x;
-                    const deltaY = y - previousMousePosition.y;
-                    particles.rotation.y += deltaX * 0.005;
-                    particles.rotation.x += deltaY * 0.005;
+                    particles.rotation.y += (x - previousMousePosition.x) * 0.005;
+                    particles.rotation.x += (y - previousMousePosition.y) * 0.005;
+                    sun.rotation.y += (x - previousMousePosition.x) * 0.005;
                     previousMousePosition = { x, y };
                 }
             };
 
-            // Mouse
-            window.addEventListener('mousedown', e => startAction(e.clientX, e.clientY));
-            window.addEventListener('mousemove', e => moveAction(e.clientX, e.clientY));
-            window.addEventListener('mouseup', () => isDragging = false);
+            // Zoom con rueda
+            window.addEventListener('wheel', e => {
+                zoom += e.deltaY * 0.005;
+                zoom = Math.max(1, Math.min(10, zoom));
+                camera.position.z = zoom;
+            });
 
-            // Táctil (Celular)
-            window.addEventListener('touchstart', e => startAction(e.touches[0].clientX, e.touches[0].clientY));
-            window.addEventListener('touchmove', e => moveAction(e.touches[0].clientX, e.touches[0].clientY));
-            window.addEventListener('touchend', () => isDragging = false);
+            // Zoom con Pellizco (Mobile)
+            let initialDist = 0;
+            window.addEventListener('touchmove', e => {
+                if (e.touches.length === 2) {
+                    let dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                    if (initialDist > 0) {
+                        zoom += (initialDist - dist) * 0.01;
+                        zoom = Math.max(1, Math.min(10, zoom));
+                        camera.position.z = zoom;
+                    }
+                    initialDist = dist;
+                } else {
+                    move(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            });
+
+            window.addEventListener('touchstart', e => {
+                if (e.touches.length === 1) start(e.touches[0].clientX, e.touches[0].clientY);
+                else initialDist = 0;
+            });
+
+            window.addEventListener('mousedown', e => start(e.clientX, e.clientY));
+            window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+            window.addEventListener('mouseup', () => isDragging = false);
+            window.addEventListener('touchend', () => { isDragging = false; initialDist = 0; });
 
             animate();
         }
 
+        function generateSprite() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.2, 'rgba(255,0,0,0.8)');
+            gradient.addColorStop(0.5, 'rgba(100,0,0,0.2)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 64, 64);
+            return canvas;
+        }
+
         function animate() {
             requestAnimationFrame(animate);
-            // Rotación automática muy lenta si no se toca
             if(!isDragging) {
                 particles.rotation.y += 0.0005;
+                sun.rotation.y += 0.005;
             }
             renderer.render(scene, camera);
         }
+        init();
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
-
-        init();
     </script>
 </body>
 </html>
