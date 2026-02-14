@@ -3,42 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Para mi Ivana ❤️</title>
+    <title>Para mi Ivana Eterna ❤️</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; }
         canvas { display: block; }
-        
-        /* Mensaje Principal (Fijo al frente) */
-        #mensaje-central {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            width: 90%;
-            z-index: 100;
-            pointer-events: none;
-        }
-
-        h1 {
-            font-size: 1.8rem;
-            color: #ff0000;
-            text-shadow: 0 0 15px #ff0000, 0 0 30px #ff0000;
-            margin: 0;
-            animation: latido 2.5s infinite ease-in-out;
-        }
-
-        @keyframes latido {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+        #instruccion {
+            position: absolute; bottom: 20px; width: 100%; text-align: center;
+            color: white; font-size: 0.7rem; opacity: 0.5; z-index: 100; pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <div id="mensaje-central">
-        <h1>Te amo mucho Ivana, eres el amor de mi vida ❤️</h1>
-    </div>
+    <div id="instruccion">Usa un dedo para girar y dos para zoom. Toca para música 🎵</div>
 
     <audio id="musica" loop>
         <source src="cancion.mp3" type="audio/mpeg">
@@ -46,18 +23,40 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        let scene, camera, renderer, starGroup;
+        let scene, camera, renderer, starGroup, mainTextGroup;
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
-        let zoom = 5;
+        let zoom = 6;
 
-        const textos = [
+        const mensajesPequeños = [
             "Me encantas bebé", "Te adoro", "Eres mi vida", "Mi cielito", "I found you", "Mi reina",
-            "Casemonos", "Coqueta", "Mi amor", "Mi tesoro", "Ivanita", "Mi bebé",
-            "La madre de mis hijos", "Mi princesa", "Muerdeme", "Eres mi estrella",
-            "Mi solecito", "Mi lindura", "Te amo x100", "Feliz Valentín", "Te extraño",
-            "Tu cinturita", "Muak", "Besemonos", "Te amo", "Mi florcita", "Mi maestra", "Mi coqueta"
+            "Casemonos", "Coqueta", "Mi amor", "Mi tesoro", "Ivanita", "Mi bebé", "La madre de mis hijos",
+            "Mi princesa", "Muerdeme", "Eres mi estrella", "Mi solecito", "Mi lindura", "Te amo x100",
+            "Feliz Valentín", "Te extraño", "Tu cinturita", "Muak", "Besemonos", "Te amo", "Mi florcita",
+            "Mi maestra", "Mi coqueta", "Eres mi familia ya", "Te extraño", "Mi Reyna", "Mi bebecita",
+            "La bebé", "Me alegras los días siempre", "No sé que haría sin tí", "Porfa nunca terminemos",
+            "Tengamos muchos animalitos", "Mi preciosa", "Beautyfull", "Gracias", "Muchas gracias",
+            "Gracias por llegar a mi vida", "Me cambiaste para bien", "obsessive", "Te amo",
+            "Tengamos 1 hijito bello", "Plis", "Mi princesitaaa", "Te amo Ivana", "Siempre te protegeré",
+            "Siempre confiaré en ti", "Siempre siempre", "Siempre pienso en tí", "Me haces muy feliz",
+            "Mi mujer", "Mi esposa", "Mi marida", "La que debo proteger", "Quieres mis córneas?",
+            "Mi color favorito", "Mi música favorita", "Mi olor favorito", "Mi persona favorita", "Mi corazón"
         ];
+
+        function createTextSprite(text, color, fontSize = 24) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 512;
+            canvas.height = 128;
+            ctx.fillStyle = color;
+            ctx.font = `Bold ${fontSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText(text, 256, 64);
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(material);
+            return sprite;
+        }
 
         function init() {
             scene = new THREE.Scene();
@@ -70,56 +69,43 @@
             scene.add(starGroup);
 
             // 1. GALAXIA AZUL 3D
-            const geometry = new THREE.BufferGeometry();
-            const count = 20000;
-            const positions = new Float32Array(count * 3);
-            for(let i=0; i < count * 3; i++) {
-                positions[i] = (Math.random() - 0.5) * 20;
+            const starGeo = new THREE.BufferGeometry();
+            const starCount = 15000;
+            const posArray = new Float32Array(starCount * 3);
+            for(let i=0; i < starCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 25;
             }
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            const material = new THREE.PointsMaterial({ 
-                size: 0.02, 
-                color: 0x00aaff, // Azul Galaxia
-                transparent: true, 
-                opacity: 0.8 
-            });
-            const stars = new THREE.Points(geometry, material);
+            starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const starMat = new THREE.PointsMaterial({ size: 0.02, color: 0x00d9ff, transparent: true, opacity: 0.7 });
+            const stars = new THREE.Points(starGeo, starMat);
             starGroup.add(stars);
 
-            // 2. MENSAJES EN 3D (Textos flotantes)
-            textos.forEach(t => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = 256;
-                canvas.height = 64;
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.font = 'Bold 24px Arial';
-                ctx.fillText(t, 10, 40);
+            // 2. MENSAJE PRINCIPAL 3D (ROJO)
+            // Lo ponemos en el centro, pero como objeto 3D que gira
+            const mainText = createTextSprite("Te amo mucho Ivana, eres el amor de mi vida ❤️", "#ff0000", 32);
+            mainText.scale.set(6, 1.5, 1);
+            mainText.position.set(0, 0, 0);
+            scene.add(mainText); // Este se queda fijo o puedes meterlo a starGroup para que gire
 
-                const texture = new THREE.CanvasTexture(canvas);
-                const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-                const sprite = new THREE.Sprite(spriteMaterial);
-                
-                // Posiciones aleatorias en el espacio 3D
-                sprite.position.set(
-                    (Math.random() - 0.5) * 10,
-                    (Math.random() - 0.5) * 10,
-                    (Math.random() - 0.5) * 10
-                );
-                sprite.scale.set(1, 0.25, 1);
-                starGroup.add(sprite);
+            // 3. LLUVIA DE MENSAJITOS 3D
+            mensajesPequeños.forEach(t => {
+                const s = createTextSprite(t, "rgba(255, 255, 255, 0.8)", 20);
+                s.position.set((Math.random()-0.5)*15, (Math.random()-0.5)*15, (Math.random()-0.5)*15);
+                s.scale.set(2, 0.5, 1);
+                starGroup.add(s);
             });
 
             camera.position.z = zoom;
 
             // --- INTERACCIÓN ---
-            const start = (x, y) => { 
-                isDragging = true; 
+            const startAction = (x, y) => {
+                isDragging = true;
                 previousMousePosition = { x, y };
-                document.getElementById('musica').play().catch(() => {});
+                document.getElementById('musica').play().catch(()=>{});
+                document.getElementById('instruccion').style.display = 'none';
             };
 
-            const move = (x, y) => {
+            const moveAction = (x, y) => {
                 if (isDragging) {
                     starGroup.rotation.y += (x - previousMousePosition.x) * 0.005;
                     starGroup.rotation.x += (y - previousMousePosition.y) * 0.005;
@@ -127,37 +113,36 @@
                 }
             };
 
-            // Zoom (Mouse y Pellizco)
-            window.addEventListener('wheel', e => {
-                zoom += e.deltaY * 0.005;
-                zoom = Math.max(1, Math.min(15, zoom));
-                camera.position.z = zoom;
-            });
-
+            // Eventos Mouse y Touch
+            window.addEventListener('mousedown', e => startAction(e.clientX, e.clientY));
+            window.addEventListener('mousemove', e => moveAction(e.clientX, e.clientY));
+            window.addEventListener('mouseup', () => isDragging = false);
+            
             let initialDist = 0;
             window.addEventListener('touchstart', e => {
-                if (e.touches.length === 1) start(e.touches[0].clientX, e.touches[0].clientY);
-                else initialDist = 0;
+                if(e.touches.length === 1) startAction(e.touches[0].clientX, e.touches[0].clientY);
             });
-
             window.addEventListener('touchmove', e => {
-                if (e.touches.length === 2) {
+                if(e.touches.length === 2) {
                     let dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-                    if (initialDist > 0) {
+                    if(initialDist > 0) {
                         zoom += (initialDist - dist) * 0.01;
-                        zoom = Math.max(1, Math.min(15, zoom));
+                        zoom = Math.max(1, Math.min(20, zoom));
                         camera.position.z = zoom;
                     }
                     initialDist = dist;
                 } else {
-                    move(e.touches[0].clientX, e.touches[0].clientY);
+                    moveAction(e.touches[0].clientX, e.touches[0].clientY);
                 }
             });
-
-            window.addEventListener('mousedown', e => start(e.clientX, e.clientY));
-            window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
-            window.addEventListener('mouseup', () => isDragging = false);
             window.addEventListener('touchend', () => { isDragging = false; initialDist = 0; });
+
+            // Zoom Mouse
+            window.addEventListener('wheel', e => {
+                zoom += e.deltaY * 0.005;
+                zoom = Math.max(1, Math.min(20, zoom));
+                camera.position.z = zoom;
+            });
 
             animate();
         }
@@ -165,18 +150,17 @@
         function animate() {
             requestAnimationFrame(animate);
             if(!isDragging) {
-                starGroup.rotation.y += 0.0007;
+                starGroup.rotation.y += 0.0008;
             }
             renderer.render(scene, camera);
         }
 
+        init();
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
-
-        init();
     </script>
 </body>
 </html>
