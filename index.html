@@ -2,189 +2,167 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Galaxia 3D Interactiva ✨</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Para mi Ivana ❤️</title>
     <style>
-        body {
-            margin: 0;
-            background: #000;
-            overflow: hidden;
-            font-family: 'Montserrat', sans-serif;
-            color: #fff;
-            text-align: center;
-            cursor: pointer; /* Indica que se puede interactuar */
-        }
-        canvas {
-            display: block;
-        }
-        #mensaje {
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; }
+        canvas { display: block; }
+        
+        /* Mensaje Principal Rojo */
+        #mensaje-central {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 10;
-            pointer-events: none; /* Permite clicks a través del mensaje */
-            opacity: 1;
-            transition: opacity 1s ease-out; /* Transición suave */
-        }
-        #mensaje.oculto {
-            opacity: 0;
-        }
-        h1 {
-            font-size: 3rem;
-            color: #ff6ec4; /* Rosa vibrante */
-            text-shadow: 0 0 20px #ff6ec4, 0 0 40px #ff6ec4;
-            animation: pulse-glow 2s infinite alternate;
-        }
-        p {
-            font-size: 1.5rem;
-            color: #aaffff; /* Cian claro */
-            margin-top: 15px;
-            font-style: italic;
-            text-shadow: 0 0 10px #aaffff;
-        }
-        #instruccion {
-            position: absolute;
-            bottom: 30px;
-            left: 0;
-            width: 100%;
             text-align: center;
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.7);
-            letter-spacing: 2px;
-            z-index: 10;
+            width: 90%;
+            z-index: 100;
             pointer-events: none;
-            transition: opacity 0.5s ease-out;
-        }
-        #instruccion.oculto {
-            opacity: 0;
         }
 
-        /* Animación de brillo para el título */
-        @keyframes pulse-glow {
-            from { text-shadow: 0 0 20px #ff6ec4, 0 0 40px #ff6ec4; }
-            to { text-shadow: 0 0 30px #ff6ec4, 0 0 60px #ff6ec4, 0 0 80px #ff6ec4; }
+        h1 {
+            font-size: 2.2rem;
+            color: #ff0000;
+            text-shadow: 0 0 15px #ff0000, 0 0 30px #ff0000;
+            margin: 0;
+            animation: latido 2.5s infinite ease-in-out;
+        }
+
+        /* Mensajitos Pequeños Flotantes */
+        .mensajito {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+            pointer-events: none;
+            z-index: 50;
+            font-style: italic;
+        }
+
+        .instruccion {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 0.7rem;
+            opacity: 0.5;
+            letter-spacing: 1px;
+            z-index: 110;
+        }
+
+        @keyframes latido {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.08); opacity: 1; }
         }
     </style>
 </head>
 <body>
 
-    <div id="mensaje">
-        <h1>¡Descubre nuestra Galaxia!</h1>
-        <p>Toca para iniciar la aventura...</p>
+    <div id="mensaje-central">
+        <h1>Te amo mucho Ivana, eres el amor de mi vida ❤️</h1>
     </div>
 
-    <div id="instruccion">TOCA LA PANTALLA ✨</div>
+    <div class="instruccion">Gira la galaxia con tu dedo y toca para la música 🎵</div>
 
-    <audio id="musicaFondo" loop>
+    <audio id="musica" loop>
         <source src="cancion.mp3" type="audio/mpeg">
-        Tu navegador no soporta el elemento de audio.
     </audio>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- Setup básico de Three.js ---
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        // --- Crear Partículas de Estrellas ---
-        const starsGeometry = new THREE.BufferGeometry();
-        const starsCount = 20000; // ¡Más estrellas!
-        const positions = new Float32Array(starsCount * 3);
-        const velocities = new Float32Array(starsCount * 3); // Para el efecto de explosión
-
-        for (let i = 0; i < starsCount * 3; i++) {
-            positions[i] = (Math.random() - 0.5) * 100; // Estrellas distribuidas en un cubo grande
-            velocities[i] = (Math.random() - 0.5) * 0.1; // Velocidad inicial para la explosión
-        }
-        starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        starsGeometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
-
-        const starsMaterial = new THREE.PointsMaterial({
-            size: 0.1,
-            color: 0x8888ff, // Estrellas azules/moradas
-            transparent: true,
-            opacity: 0.7,
-            blending: THREE.AdditiveBlending // Para que las estrellas brillen más al superponerse
+        // --- CREAR MENSAJITOS PEQUEÑOS ---
+        const textos = ["Me encantas bebé", "Te adoro", "Eres mi vida", "Mi cielito", "I found you", "Mi reina"];
+        textos.forEach(t => {
+            const span = document.createElement('div');
+            span.className = 'mensajito';
+            span.innerText = t;
+            span.style.top = Math.random() * 85 + 5 + "%";
+            span.style.left = Math.random() * 80 + 5 + "%";
+            document.body.appendChild(span);
         });
 
-        const starField = new THREE.Points(starsGeometry, starsMaterial);
-        scene.add(starField);
+        // --- MOTOR DE LA GALAXIA 3D ---
+        let scene, camera, renderer, particles;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
 
-        camera.position.z = 5;
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-        // Variables para la animación
-        let touched = false;
-        let explosionStrength = 0;
-        const maxExplosionStrength = 0.5;
+            // Crear Estrellas
+            const geometry = new THREE.BufferGeometry();
+            const count = 15000;
+            const positions = new Float32Array(count * 3);
+            for(let i=0; i < count * 3; i++) {
+                positions[i] = (Math.random() - 0.5) * 12;
+            }
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.015,
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8
+            });
 
-        // --- Función de Animación ---
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+            camera.position.z = 3;
+
+            // --- EVENTOS INTERACTIVOS (DEDO/MOUSE) ---
+            const startAction = (x, y) => {
+                isDragging = true;
+                previousMousePosition = { x, y };
+                // Activar música
+                const audio = document.getElementById('musica');
+                audio.play();
+                document.querySelector('.instruccion').style.display = 'none';
+            };
+
+            const moveAction = (x, y) => {
+                if (isDragging) {
+                    const deltaX = x - previousMousePosition.x;
+                    const deltaY = y - previousMousePosition.y;
+                    particles.rotation.y += deltaX * 0.005;
+                    particles.rotation.x += deltaY * 0.005;
+                    previousMousePosition = { x, y };
+                }
+            };
+
+            // Mouse
+            window.addEventListener('mousedown', e => startAction(e.clientX, e.clientY));
+            window.addEventListener('mousemove', e => moveAction(e.clientX, e.clientY));
+            window.addEventListener('mouseup', () => isDragging = false);
+
+            // Táctil (Celular)
+            window.addEventListener('touchstart', e => startAction(e.touches[0].clientX, e.touches[0].clientY));
+            window.addEventListener('touchmove', e => moveAction(e.touches[0].clientX, e.touches[0].clientY));
+            window.addEventListener('touchend', () => isDragging = false);
+
+            animate();
+        }
+
         function animate() {
             requestAnimationFrame(animate);
-
-            if (!touched) {
-                // Rotación normal de la galaxia antes de tocar
-                starField.rotation.y += 0.0008;
-                starField.rotation.x += 0.0003;
-            } else {
-                // Efecto de explosión de estrellas al tocar
-                const positions = starField.geometry.attributes.position.array;
-                const velocities = starField.geometry.attributes.velocity.array;
-
-                for (let i = 0; i < starsCount * 3; i += 3) {
-                    // Mover estrellas según su velocidad
-                    positions[i] += velocities[i] * explosionStrength;
-                    positions[i+1] += velocities[i+1] * explosionStrength;
-                    positions[i+2] += velocities[i+2] * explosionStrength;
-
-                    // Si una estrella se va muy lejos, la reseteamos al centro
-                    if (Math.abs(positions[i]) > 100) positions[i] = (Math.random() - 0.5) * 10;
-                    if (Math.abs(positions[i+1]) > 100) positions[i+1] = (Math.random() - 0.5) * 10;
-                    if (Math.abs(positions[i+2]) > 100) positions[i+2] = (Math.random() - 0.5) * 10;
-                }
-                starField.geometry.attributes.position.needsUpdate = true; // Actualizar la posición de las estrellas
-                
-                // Disminuir la fuerza de la explosión gradualmente
-                if (explosionStrength > 0) {
-                    explosionStrength -= 0.01; // Velocidad de desvanecimiento
-                } else {
-                    explosionStrength = 0;
-                    // Cuando la explosión termina, la galaxia vuelve a rotar lentamente
-                    starField.rotation.y += 0.0008;
-                    starField.rotation.x += 0.0003;
-                }
+            // Rotación automática muy lenta si no se toca
+            if(!isDragging) {
+                particles.rotation.y += 0.0005;
             }
-
             renderer.render(scene, camera);
         }
-        animate();
 
-        // --- Manejo del click/touch ---
-        document.body.addEventListener('click', () => {
-            const audio = document.getElementById('musicaFondo');
-            const mensajeDiv = document.getElementById('mensaje');
-            const instruccionDiv = document.getElementById('instruccion');
-
-            // Solo al primer toque
-            if (!touched) {
-                audio.play();
-                mensajeDiv.classList.add('oculto'); // Oculta el mensaje
-                instruccionDiv.classList.add('oculto'); // Oculta la instrucción
-                touched = true; // Marca que ya se tocó
-                explosionStrength = maxExplosionStrength; // Inicia la explosión
-                starField.material.color.set(0xffaaff); // Cambia el color de las estrellas a rosa claro
-            }
-        }, { once: false }); // Permite múltiples clicks para reactivar la explosión
-
-        // --- Ajustar al redimensionar la ventana ---
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        init();
     </script>
 </body>
 </html>
