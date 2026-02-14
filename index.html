@@ -80,16 +80,29 @@
             starGroup = new THREE.Group();
             scene.add(starGroup);
 
-            const starGeo = new THREE.BufferGeometry();
+            // --- GALAXIA MULTICOLOR (Blanco, Celeste bajito, Morado bajito) ---
             const starCount = 15000;
-            const posArray = new Float32Array(starCount * 3);
-            for(let i=0; i < starCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 40;
-            }
-            starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const starMat = new THREE.PointsMaterial({ size: 0.025, color: 0xff69b4, transparent: true, opacity: 0.8 });
-            const stars = new THREE.Points(starGeo, starMat);
-            starGroup.add(stars);
+            const colors = [0xffffff, 0xa2e1f2, 0xd1b2ff]; // Blanco, Celeste suave, Morado suave
+
+            colors.forEach(colorHex => {
+                const starGeo = new THREE.BufferGeometry();
+                const countPerColor = Math.floor(starCount / 3);
+                const posArray = new Float32Array(countPerColor * 3);
+                
+                for(let i=0; i < countPerColor * 3; i++) {
+                    posArray[i] = (Math.random() - 0.5) * 40;
+                }
+                
+                starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+                const starMat = new THREE.PointsMaterial({ 
+                    size: 0.025, 
+                    color: colorHex, 
+                    transparent: true, 
+                    opacity: 0.8 
+                });
+                const stars = new THREE.Points(starGeo, starMat);
+                starGroup.add(stars);
+            });
 
             mainText = createTextSprite("Te amo mucho Ivana ❤️", "#ff0000", 90, true);
             mainText.scale.set(6, 1.5, 1);
@@ -138,7 +151,6 @@
                     let dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
                     if(initialDist > 0) {
                         zoom += (initialDist - dist) * 0.02;
-                        // AQUÍ SE CAMBIÓ EL LÍMITE A 20
                         zoom = Math.max(1, Math.min(20, zoom));
                         camera.position.z = zoom;
                     }
@@ -150,9 +162,7 @@
             window.addEventListener('touchend', () => { isDragging = false; initialDist = 0; mainText.position.set(0,0,0.5); });
 
             window.addEventListener('wheel', e => {
-                zoom += e.deltaY * 0.01;
-                // AQUÍ TAMBIÉN SE CAMBIÓ EL LÍMITE A 20
-                zoom = Math.max(1, Math.min(20, zoom));
+                zoom = Math.max(1, Math.min(20, zoom + e.deltaY * 0.01));
                 camera.position.z = zoom;
             });
 
