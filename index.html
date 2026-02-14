@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galaxia 3D Interactiva ✨</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: 'Montserrat', sans-serif;
+            color: #fff;
+            text-align: center;
+            cursor: pointer; /* Indica que se puede interactuar */
+        }
+        canvas {
+            display: block;
+        }
+        #mensaje {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            pointer-events: none; /* Permite clicks a través del mensaje */
+            opacity: 1;
+            transition: opacity 1s ease-out; /* Transición suave */
+        }
+        #mensaje.oculto {
+            opacity: 0;
+        }
+        h1 {
+            font-size: 3rem;
+            color: #ff6ec4; /* Rosa vibrante */
+            text-shadow: 0 0 20px #ff6ec4, 0 0 40px #ff6ec4;
+            animation: pulse-glow 2s infinite alternate;
+        }
+        p {
+            font-size: 1.5rem;
+            color: #aaffff; /* Cian claro */
+            margin-top: 15px;
+            font-style: italic;
+            text-shadow: 0 0 10px #aaffff;
+        }
+        #instruccion {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 2px;
+            z-index: 10;
+            pointer-events: none;
+            transition: opacity 0.5s ease-out;
+        }
+        #instruccion.oculto {
+            opacity: 0;
+        }
+
+        /* Animación de brillo para el título */
+        @keyframes pulse-glow {
+            from { text-shadow: 0 0 20px #ff6ec4, 0 0 40px #ff6ec4; }
+            to { text-shadow: 0 0 30px #ff6ec4, 0 0 60px #ff6ec4, 0 0 80px #ff6ec4; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="mensaje">
+        <h1>¡Descubre nuestra Galaxia!</h1>
+        <p>Toca para iniciar la aventura...</p>
+    </div>
+
+    <div id="instruccion">TOCA LA PANTALLA ✨</div>
+
+    <audio id="musicaFondo" loop>
+        <source src="cancion.mp3" type="audio/mpeg">
+        Tu navegador no soporta el elemento de audio.
+    </audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // --- Setup básico de Three.js ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // --- Crear Partículas de Estrellas ---
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsCount = 20000; // ¡Más estrellas!
+        const positions = new Float32Array(starsCount * 3);
+        const velocities = new Float32Array(starsCount * 3); // Para el efecto de explosión
+
+        for (let i = 0; i < starsCount * 3; i++) {
+            positions[i] = (Math.random() - 0.5) * 100; // Estrellas distribuidas en un cubo grande
+            velocities[i] = (Math.random() - 0.5) * 0.1; // Velocidad inicial para la explosión
+        }
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        starsGeometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+
+        const starsMaterial = new THREE.PointsMaterial({
+            size: 0.1,
+            color: 0x8888ff, // Estrellas azules/moradas
+            transparent: true,
+            opacity: 0.7,
+            blending: THREE.AdditiveBlending // Para que las estrellas brillen más al superponerse
+        });
+
+        const starField = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(starField);
+
+        camera.position.z = 5;
+
+        // Variables para la animación
+        let touched = false;
+        let explosionStrength = 0;
+        const maxExplosionStrength = 0.5;
+
+        // --- Función de Animación ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (!touched) {
+                // Rotación normal de la galaxia antes de tocar
+                starField.rotation.y += 0.0008;
+                starField.rotation.x += 0.0003;
+            } else {
+                // Efecto de explosión de estrellas al tocar
+                const positions = starField.geometry.attributes.position.array;
+                const velocities = starField.geometry.attributes.velocity.array;
+
+                for (let i = 0; i < starsCount * 3; i += 3) {
+                    // Mover estrellas según su velocidad
+                    positions[i] += velocities[i] * explosionStrength;
+                    positions[i+1] += velocities[i+1] * explosionStrength;
+                    positions[i+2] += velocities[i+2] * explosionStrength;
+
+                    // Si una estrella se va muy lejos, la reseteamos al centro
+                    if (Math.abs(positions[i]) > 100) positions[i] = (Math.random() - 0.5) * 10;
+                    if (Math.abs(positions[i+1]) > 100) positions[i+1] = (Math.random() - 0.5) * 10;
+                    if (Math.abs(positions[i+2]) > 100) positions[i+2] = (Math.random() - 0.5) * 10;
+                }
+                starField.geometry.attributes.position.needsUpdate = true; // Actualizar la posición de las estrellas
+                
+                // Disminuir la fuerza de la explosión gradualmente
+                if (explosionStrength > 0) {
+                    explosionStrength -= 0.01; // Velocidad de desvanecimiento
+                } else {
+                    explosionStrength = 0;
+                    // Cuando la explosión termina, la galaxia vuelve a rotar lentamente
+                    starField.rotation.y += 0.0008;
+                    starField.rotation.x += 0.0003;
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- Manejo del click/touch ---
+        document.body.addEventListener('click', () => {
+            const audio = document.getElementById('musicaFondo');
+            const mensajeDiv = document.getElementById('mensaje');
+            const instruccionDiv = document.getElementById('instruccion');
+
+            // Solo al primer toque
+            if (!touched) {
+                audio.play();
+                mensajeDiv.classList.add('oculto'); // Oculta el mensaje
+                instruccionDiv.classList.add('oculto'); // Oculta la instrucción
+                touched = true; // Marca que ya se tocó
+                explosionStrength = maxExplosionStrength; // Inicia la explosión
+                starField.material.color.set(0xffaaff); // Cambia el color de las estrellas a rosa claro
+            }
+        }, { once: false }); // Permite múltiples clicks para reactivar la explosión
+
+        // --- Ajustar al redimensionar la ventana ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
