@@ -23,10 +23,10 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        let scene, camera, renderer, starGroup, mainText, planet;
+        let scene, camera, renderer, starGroup, mainText;
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
-        let zoom = 8;
+        let zoom = 7;
 
         const mensajesPequeños = [
             "Me encantas bebé", "Te adoro", "Eres mi vida", "Mi cielito", "I found you", "Mi reina",
@@ -73,54 +73,46 @@
             starGroup = new THREE.Group();
             scene.add(starGroup);
 
-            // 1. ESFERA CENTRAL 3D (Planeta de Ivana)
-            const geometry = new THREE.SphereGeometry(1.5, 32, 32);
-            const material = new THREE.MeshBasicMaterial({ 
-                color: 0x001133, 
-                wireframe: true,
-                transparent: true,
-                opacity: 0.5
-            });
-            planet = new THREE.Mesh(geometry, material);
-            scene.add(planet);
-
-            // Núcleo brillante de la esfera
-            const coreGeo = new THREE.SphereGeometry(1.2, 32, 32);
-            const coreMat = new THREE.MeshBasicMaterial({ color: 0x00d9ff });
-            const core = new THREE.Mesh(coreGeo, coreMat);
-            planet.add(core);
-
-            // 2. GALAXIA AZUL ORBITAL
+            // 1. GALAXIA CON CENTRO ESFÉRICO DENSO
             const starGeo = new THREE.BufferGeometry();
-            const starCount = 18000;
+            const starCount = 20000;
             const posArray = new Float32Array(starCount * 3);
-            for(let i=0; i < starCount * 3; i++) {
-                // Distribución tipo disco/galaxia
-                const r = 5 + Math.random() * 15;
+
+            for(let i=0; i < starCount; i++) {
+                // Generamos una distribución que sea muy densa en el centro (esfera)
+                // y se disperse conforme se aleja
+                const dist = Math.pow(Math.random(), 2) * 25; // Concentración hacia el centro
                 const theta = Math.random() * Math.PI * 2;
-                posArray[i*3] = r * Math.cos(theta);
-                posArray[i*3+1] = (Math.random() - 0.5) * 5; 
-                posArray[i*3+2] = r * Math.sin(theta);
+                const phi = Math.acos(2 * Math.random() - 1);
+
+                posArray[i*3] = dist * Math.sin(phi) * Math.cos(theta);
+                posArray[i*3+1] = dist * Math.sin(phi) * Math.sin(theta);
+                posArray[i*3+2] = dist * Math.cos(phi);
             }
+
             starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const starMat = new THREE.PointsMaterial({ size: 0.03, color: 0x00d9ff, transparent: true, opacity: 0.6 });
+            const starMat = new THREE.PointsMaterial({ 
+                size: 0.03, 
+                color: 0x00d9ff, 
+                transparent: true, 
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending 
+            });
             const stars = new THREE.Points(starGeo, starMat);
             starGroup.add(stars);
 
-            // 3. MENSAJE PRINCIPAL
+            // 2. MENSAJE PRINCIPAL ROJO
             mainText = createTextSprite("Te amo mucho Ivana ❤️", "#ff0000", 90, true);
-            mainText.scale.set(8, 2, 1);
-            mainText.position.set(0, 4, 0); // Flotando arriba de la esfera
+            mainText.scale.set(6, 1.5, 1);
+            mainText.position.set(0, 0, 1); // Un poco al frente del centro denso
             scene.add(mainText);
 
-            // 4. MENSAJITOS PEQUEÑOS ORBITANDO
+            // 3. MENSAJITOS PEQUEÑOS EN EL ESPACIO
             mensajesPequeños.forEach(t => {
                 const s = createTextSprite(t, "rgba(255, 255, 255, 0.9)", 35);
-                const r = 6 + Math.random() * 12;
-                const theta = Math.random() * Math.PI * 2;
-                const phi = (Math.random() - 0.5) * Math.PI;
-                s.position.set(r * Math.cos(theta) * Math.sin(phi), r * Math.sin(theta) * Math.sin(phi), r * Math.cos(phi));
-                s.scale.set(2, 0.5, 1);
+                // Distribución aleatoria para que floten entre las estrellas
+                s.position.set((Math.random()-0.5)*35, (Math.random()-0.5)*35, (Math.random()-0.5)*35);
+                s.scale.set(1.8, 0.45, 1);
                 starGroup.add(s);
             });
 
@@ -138,7 +130,6 @@
                 if (isDragging) {
                     starGroup.rotation.y += (x - previousMousePosition.x) * 0.005;
                     starGroup.rotation.x += (y - previousMousePosition.y) * 0.005;
-                    planet.rotation.y += (x - previousMousePosition.x) * 0.002;
                     previousMousePosition = { x, y };
                 }
             };
@@ -150,31 +141,4 @@
             window.addEventListener('touchmove', e => {
                 if(e.touches.length === 2) {
                     let dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-                    zoom = Math.max(2, Math.min(40, zoom + (dist < 100 ? 0.1 : -0.1))); // Zoom simplificado
-                    camera.position.z = zoom;
-                } else { moveAction(e.touches[0].clientX, e.touches[0].clientY); }
-            });
-            window.addEventListener('wheel', e => { zoom = Math.max(2, Math.min(40, zoom + e.deltaY * 0.01)); camera.position.z = zoom; });
-
-            animate();
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            if(!isDragging) {
-                starGroup.rotation.y += 0.001;
-                planet.rotation.y += 0.005;
-                mainText.position.y = 4 + Math.sin(Date.now() * 0.002) * 0.3;
-            }
-            renderer.render(scene, camera);
-        }
-
-        init();
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
-</body>
-</html>
+                    zoom = Math.max(1, Math.min(40, zoom +
